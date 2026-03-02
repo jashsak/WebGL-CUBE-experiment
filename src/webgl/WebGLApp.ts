@@ -115,9 +115,12 @@ export class WebGLApp {
         uParticleSize: { value: 1.0 },
         uBass: { value: 0 },
         uMid: { value: 0 },
+        uTreble: { value: 0 },
         uAudioBassScale: { value: 0.4 },
         uAudioMidGlow: { value: 0.2 },
-        uStructure: { value: 1.0 }
+        uAudioTrebleScatter: { value: 0.6 },
+        uStructure: { value: 1.0 },
+        uTime: { value: 0 }
       },
       vertexShader: particleVertexShader,
       fragmentShader: particleFragmentShader,
@@ -208,8 +211,12 @@ export class WebGLApp {
       pU.uParticleSize.value = v.particleSize;
       pU.uBass.value = this.smoothedBass;
       pU.uMid.value = this.smoothedMid;
+      pU.uTreble.value = this.smoothedTreble;
+      pU.uAudioBassScale.value = v.audioBassScale;
       pU.uAudioMidGlow.value = v.audioMidGlow;
+      pU.uAudioTrebleScatter.value = v.audioTrebleScatter;
       pU.uStructure.value = currentStructure;
+      pU.uTime.value = elapsedTime;
     }
 
     if (this.controls) {
