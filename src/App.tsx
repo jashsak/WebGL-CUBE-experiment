@@ -22,19 +22,19 @@ export default function App() {
     track: { type: 'segmented', options: ['Cinematic', 'Synthwave', 'Deep House', 'EDM'], default: 'Synthwave' },
     uploadMp3: { type: 'action', label: 'Upload Local MP3' },
     playPause: { type: 'action', label: '▶ Play / Pause' },
-    audioSmoothing: [0.1, 0.0, 0.99, 0.01],
-    audioBassScale: [0.4, 0.0, 2.0, 0.01],
-    audioTrebleScatter: [0.1, 0.0, 1.0, 0.01],
-    audioMidGlow: [0.4, 0.0, 2.0, 0.01],
-    particleSize: [1.2, 1.0, 10.0, 0.1],
+    audioSmoothing: [0.52, 0.0, 0.99, 0.01],
+    audioBassScale: [0.06, 0.0, 2.0, 0.01],
+    audioTrebleScatter: [0.0, 0.0, 1.0, 0.01],
+    audioMidGlow: [0.08, 0.0, 2.0, 0.01],
+    particleSize: [1.0, 1.0, 10.0, 0.1],
 
-    bassSizeBump: [0.2, 0.0, 2.0, 0.01],
-    speakerConeRadius: [3.5, 0.1, 10.0, 0.1],
+    bassSizeBump: [0.41, 0.0, 2.0, 0.01],
+    speakerConeRadius: [3.4, 0.1, 10.0, 0.1],
 
     mouseRadius: [2.5, 0.1, 5.0, 0.1],
     mouseForce: [1.2, -5.0, 5.0, 0.1],
     mouseSwirl: [0.5, -10.0, 10.0, 0.1],
-    mouseDisruption: [0.3, 0.0, 10.0, 0.1],
+    mouseDisruption: [0.0, 0.0, 10.0, 0.1],
 
     // Actions
     reset: { type: 'action', label: '↺ Reset' }
