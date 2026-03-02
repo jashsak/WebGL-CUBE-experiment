@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useCallback, useState } from "react";
+import { useRef, useEffect, useCallback } from "react";
 import { DialRoot, useDialKit } from "dialkit";
 import "dialkit/styles.css";
 import { WebGLApp } from "./webgl/WebGLApp";
@@ -20,9 +20,9 @@ export default function MaskPage() {
     flowSpeed: [0.0, -3.0, 3.0, 0.1],
     twistAmount: [0.0, -2.0, 2.0, 0.1],
     
-    audioBassScale: [0.0, 0.0, 2.0, 0.1],
-    audioTrebleScatter: [0.0, 0.0, 5.0, 0.1],
-    audioMidGlow: [0.0, 0.0, 3.0, 0.1],
+    audioBassScale: [0.2, 0.0, 2.0, 0.1],
+    audioTrebleScatter: [0.2, 0.0, 5.0, 0.1],
+    audioMidGlow: [0.2, 0.0, 3.0, 0.1],
     particleSize: [1.0, 1.0, 10.0, 0.1],
     
     mouseRadius: [2.5, 0.1, 5.0, 0.1],
@@ -35,12 +35,14 @@ export default function MaskPage() {
   }, {
     onAction: (action) => {
       if (action === 'playPause') {
-        if (audioRef.current) {
+        const audio = document.getElementById('mask-audio') as HTMLAudioElement;
+        if (audio) {
+          // Trigger the local event to initialize AudioContext
           document.dispatchEvent(new CustomEvent('init-mask-audio'));
-          if (audioRef.current.paused) {
-            audioRef.current.play().catch(() => {});
+          if (audio.paused) {
+            audio.play().catch((err) => console.error("Play failed:", err));
           } else {
-            audioRef.current.pause();
+            audio.pause();
           }
         }
       }
@@ -56,8 +58,6 @@ export default function MaskPage() {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const dataArrayRef = useRef<Uint8Array | null>(null);
-
-  const [isReady, setIsReady] = useState(false);
 
   const initAudio = useCallback(() => {
     if (!audioCtxRef.current && audioRef.current) {
@@ -119,7 +119,6 @@ export default function MaskPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setIsReady(true);
       if (audioRef.current) {
         initAudio();
         audioRef.current.play().catch((err) => {
@@ -141,24 +140,28 @@ export default function MaskPage() {
 
   // Fallback for autoplay block
   const handleInteraction = () => {
-    if (isReady && audioRef.current && audioRef.current.paused) {
-      initAudio();
+    initAudio();
+    if (audioRef.current && audioRef.current.paused) {
       audioRef.current.play().catch(() => {});
     }
   };
 
   return (
     <div 
-      onClick={handleInteraction}
       style={{ backgroundColor: "#0a0a0a", color: "#fff", width: "100vw", height: "100vh", position: "fixed", top: 0, left: 0, overflow: "hidden", fontFamily: "system-ui, sans-serif" }}
     >
       <audio 
+        id="mask-audio"
         ref={audioRef} 
         src="/assets/tracks/Valentino Khan - Deep Down Low (Official Music Video).mp3" 
         crossOrigin="anonymous" 
         loop 
       />
-      <div ref={containerRef} style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }} />
+      <div 
+        ref={containerRef} 
+        onClick={handleInteraction}
+        style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }} 
+      />
       <DialRoot />
     </div>
   );

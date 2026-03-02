@@ -50,21 +50,26 @@ void main() {
     // 2. Audio Bass scales the base structural target outward organically
     targetPos *= 1.0 + (uBass * uAudioBassScale * 0.8);
 
-    // 3. Apply Spatial Twist & Flow to Target
+    // 3. Audio Mid adds a slight breathing scale to the target
+    targetPos *= 1.0 + (uMid * uAudioMidGlow * 0.2);
+
+    // 4. Audio Treble expands the edges using the noise vector, maintaining the overall structure
+    targetPos += noiseVec * (uTreble * uAudioTrebleScatter * 0.3);
+
+    // 5. Apply Spatial Twist & Flow to Target
     float flowAngle = targetPos.y * uTwistAmount + (uTime * uFlowSpeed);
     float s = sin(flowAngle); float c = cos(flowAngle);
     targetPos.xz = mat2(c, -s, s, c) * targetPos.xz;
 
-    // 4. Spring Force (Pull back to Target gently for a fluid feel)
+    // 6. Spring Force (Pull back to Target gently for a fluid feel)
     // Decreased multiplier so it floats back softly instead of snapping
     vec3 springForce = (targetPos - pos) * (0.005 * uStructure);
 
-    // 5. Audio Forces (Applied to velocity as wind, not rigid target positions)
-    float noiseAmplitude = (1.0 - uStructure) * 0.2 + (uTreble * uAudioTrebleScatter * 0.05);
-    vec3 audioWind = noiseVec * noiseAmplitude;
-    float updraft = sin(pos.x * 2.0 + uTime * 1.5) * (uMid * uAudioMidGlow * 0.02);
+    // 7. Ambient structural noise (wind) when structure is low
+    float noiseAmplitude = (1.0 - uStructure) * 0.2;
+    vec3 ambientWind = noiseVec * noiseAmplitude;
     
-    // 6. Mouse Interaction Forces
+    // 8. Mouse Interaction Forces
     vec3 dirToMouse = pos - uMousePos;
     float distToMouse = length(dirToMouse);
     vec3 mouseForceVec = vec3(0.0);
@@ -79,13 +84,12 @@ void main() {
         mouseForceVec += noiseVec * uMouseDisruption * falloff * 0.05; 
     }
 
-    // 7. Accumulate Forces
+    // 9. Accumulate Forces
     vel += springForce;
-    vel += audioWind;
-    vel.y += updraft;
+    vel += ambientWind;
     vel += mouseForceVec; 
 
-    // 8. Friction / Damping (High drag for syrup/fluid momentum)
+    // 10. Friction / Damping (High drag for syrup/fluid momentum)
     vel *= 0.88;
 
     gl_FragColor = vec4(vel, 1.0);
