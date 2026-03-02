@@ -22,9 +22,9 @@ export default function App() {
     track: { type: 'segmented', options: ['Cinematic', 'Synthwave', 'Deep House', 'EDM'], default: 'Synthwave' },
     uploadMp3: { type: 'action', label: 'Upload Local MP3' },
     playPause: { type: 'action', label: '▶ Play / Pause' },
-    audioBassScale: [0.6, 0.0, 2.0, 0.01],
-    audioTrebleScatter: [0.2, 0.0, 1.0, 0.01],
-    audioMidGlow: [0.5, 0.0, 1.0, 0.01],
+    audioBassScale: [0.4, 0.0, 1.0, 0.01],
+    audioTrebleScatter: [0.15, 0.0, 0.5, 0.01],
+    audioMidGlow: [0.4, 0.0, 1.0, 0.01],
     particleSize: [2.0, 1.0, 10.0, 0.1],
 
     mouseRadius: [2.5, 0.1, 5.0, 0.1],
