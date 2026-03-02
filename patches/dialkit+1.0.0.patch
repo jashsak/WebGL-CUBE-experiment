@@ -1,0 +1,187 @@
+diff --git a/node_modules/dialkit/dist/index.d.ts b/node_modules/dialkit/dist/index.d.ts
+index 7d56e7f..bbcbc36 100644
+--- a/node_modules/dialkit/dist/index.d.ts
++++ b/node_modules/dialkit/dist/index.d.ts
+@@ -28,6 +28,14 @@ type SelectConfig = {
+     })[];
+     default?: string;
+ };
++type SegmentedConfig = {
++    type: 'segmented';
++    options: (string | {
++        value: string;
++        label: string;
++    })[];
++    default?: string;
++};
+ type ColorConfig = {
+     type: 'color';
+     default?: string;
+@@ -37,15 +45,15 @@ type TextConfig = {
+     default?: string;
+     placeholder?: string;
+ };
+-type DialValue = number | boolean | string | SpringConfig | EasingConfig | ActionConfig | SelectConfig | ColorConfig | TextConfig;
++type DialValue = number | boolean | string | SpringConfig | EasingConfig | ActionConfig | SelectConfig | SegmentedConfig | ColorConfig | TextConfig;
+ type DialConfig = {
+     [key: string]: DialValue | [number, number, number, number?] | DialConfig;
+ };
+ type ResolvedValues<T extends DialConfig> = {
+-    [K in keyof T]: T[K] extends [number, number, number, number?] ? number : T[K] extends SpringConfig ? TransitionConfig : T[K] extends EasingConfig ? TransitionConfig : T[K] extends SelectConfig ? string : T[K] extends ColorConfig ? string : T[K] extends TextConfig ? string : T[K] extends DialConfig ? ResolvedValues<T[K]> : T[K];
++    [K in keyof T]: T[K] extends [number, number, number, number?] ? number : T[K] extends SpringConfig ? TransitionConfig : T[K] extends EasingConfig ? TransitionConfig : T[K] extends SelectConfig ? string : T[K] extends SegmentedConfig ? string : T[K] extends ColorConfig ? string : T[K] extends TextConfig ? string : T[K] extends DialConfig ? ResolvedValues<T[K]> : T[K];
+ };
+ type ControlMeta = {
+-    type: 'slider' | 'toggle' | 'spring' | 'transition' | 'folder' | 'action' | 'select' | 'color' | 'text';
++    type: 'slider' | 'toggle' | 'spring' | 'transition' | 'folder' | 'action' | 'select' | 'segmented' | 'color' | 'text';
+     path: string;
+     label: string;
+     min?: number;
+@@ -237,4 +245,4 @@ interface PresetManagerProps {
+ }
+ declare function PresetManager({ panelId, presets, activePresetId, onAdd }: PresetManagerProps): react_jsx_runtime.JSX.Element;
+ 
+-export { type ActionConfig, ButtonGroup, type ColorConfig, ColorControl, type ControlMeta, type DialConfig, type DialPosition, DialRoot, DialStore, type DialValue, type EasingConfig, EasingVisualization, Folder, type PanelConfig, type Preset, PresetManager, type ResolvedValues, type SelectConfig, SelectControl, Slider, type SpringConfig, SpringControl, SpringVisualization, type TextConfig, TextControl, Toggle, type TransitionConfig, TransitionControl, type UseDialOptions, useDialKit };
++export { type ActionConfig, ButtonGroup, type ColorConfig, ColorControl, type ControlMeta, type DialConfig, type DialPosition, DialRoot, DialStore, type DialValue, type EasingConfig, EasingVisualization, Folder, type PanelConfig, type Preset, PresetManager, type ResolvedValues, type SelectConfig, type SegmentedConfig, SelectControl, Slider, type SpringConfig, SpringControl, SpringVisualization, type TextConfig, TextControl, Toggle, type TransitionConfig, TransitionControl, type UseDialOptions, useDialKit };
+diff --git a/node_modules/dialkit/dist/index.js b/node_modules/dialkit/dist/index.js
+index 451c984..dc7e38d 100644
+--- a/node_modules/dialkit/dist/index.js
++++ b/node_modules/dialkit/dist/index.js
+@@ -227,7 +227,7 @@ var DialStoreClass = class {
+         const hasPhysics = value.stiffness !== void 0 || value.damping !== void 0 || value.mass !== void 0;
+         const hasTime = value.visualDuration !== void 0 || value.bounce !== void 0;
+         values[`${path}.__mode`] = hasPhysics && !hasTime ? "advanced" : "simple";
+-      } else if (typeof value === "object" && value !== null && !Array.isArray(value) && !this.isActionConfig(value) && !this.isSelectConfig(value) && !this.isColorConfig(value) && !this.isTextConfig(value)) {
++      } else if (typeof value === "object" && value !== null && !Array.isArray(value) && !this.isActionConfig(value) && !this.isSelectConfig(value) && !this.isSegmentedConfig(value) && !this.isColorConfig(value) && !this.isTextConfig(value)) {
+         this.initTransitionModes(value, path, values);
+       }
+     }
+@@ -258,6 +258,8 @@ var DialStoreClass = class {
+         controls.push({ type: "action", path, label: value.label || label });
+       } else if (this.isSelectConfig(value)) {
+         controls.push({ type: "select", path, label, options: value.options });
++      } else if (this.isSegmentedConfig(value)) {
++        controls.push({ type: "segmented", path, label, options: value.options });
+       } else if (this.isColorConfig(value)) {
+         controls.push({ type: "color", path, label });
+       } else if (this.isTextConfig(value)) {
+@@ -295,7 +297,7 @@ var DialStoreClass = class {
+         values[path] = value;
+       } else if (this.isActionConfig(value)) {
+         values[path] = value;
+-      } else if (this.isSelectConfig(value)) {
++      } else if (this.isSelectConfig(value) || this.isSegmentedConfig(value)) {
+         const firstOption = value.options[0];
+         const firstValue = typeof firstOption === "string" ? firstOption : firstOption.value;
+         values[path] = value.default ?? firstValue;
+@@ -321,6 +323,9 @@ var DialStoreClass = class {
+   isSelectConfig(value) {
+     return typeof value === "object" && value !== null && "type" in value && value.type === "select" && "options" in value && Array.isArray(value.options);
+   }
++  isSegmentedConfig(value) {
++    return typeof value === "object" && value !== null && "type" in value && value.type === "segmented" && "options" in value && Array.isArray(value.options);
++  }
+   isColorConfig(value) {
+     return typeof value === "object" && value !== null && "type" in value && value.type === "color";
+   }
+@@ -372,7 +377,8 @@ var DialStoreClass = class {
+       }
+       case "toggle":
+         return typeof existingValue === "boolean" ? existingValue : defaultValue;
+-      case "select": {
++      case "select":
++      case "segmented": {
+         if (typeof existingValue !== "string") {
+           return defaultValue;
+         }
+@@ -471,7 +477,7 @@ function buildResolvedValues(config, flatValues, prefix) {
+       result[key] = flatValues[path] ?? configValue;
+     } else if (isActionConfig(configValue)) {
+       result[key] = flatValues[path] ?? configValue;
+-    } else if (isSelectConfig(configValue)) {
++    } else if (isSelectConfig(configValue) || isSegmentedConfig(configValue)) {
+       const defaultValue = configValue.default ?? getFirstOptionValue(configValue.options);
+       result[key] = flatValues[path] ?? defaultValue;
+     } else if (isColorConfig(configValue)) {
+@@ -499,6 +505,9 @@ function isActionConfig(value) {
+ function isSelectConfig(value) {
+   return hasType(value, "select") && "options" in value && Array.isArray(value.options);
+ }
++function isSegmentedConfig(value) {
++  return hasType(value, "segmented") && "options" in value && Array.isArray(value.options);
++}
+ function isColorConfig(value) {
+   return hasType(value, "color");
+ }
+@@ -1018,7 +1027,9 @@ function SegmentedControl({
+       const buttonRect = button.getBoundingClientRect();
+       setPillStyle({
+         left: buttonRect.left - containerRect.left,
+-        width: buttonRect.width
++        top: buttonRect.top - containerRect.top,
++        width: buttonRect.width,
++        height: buttonRect.height
+       });
+     }
+   }, [value]);
+@@ -1027,8 +1038,8 @@ function SegmentedControl({
+       motion3.div,
+       {
+         className: "dialkit-segmented-pill",
+-        style: { left: pillStyle.left, width: pillStyle.width },
+-        animate: { left: pillStyle.left, width: pillStyle.width },
++        style: { left: pillStyle.left, top: pillStyle.top, width: pillStyle.width, height: pillStyle.height },
++        animate: { left: pillStyle.left, top: pillStyle.top, width: pillStyle.width, height: pillStyle.height },
+         transition: hasAnimated.current ? { type: "spring", visualDuration: 0.2, bounce: 0.15 } : { duration: 0 },
+         onAnimationComplete: () => {
+           hasAnimated.current = true;
+@@ -1900,6 +1911,17 @@ Apply these values as the new defaults in the useDialKit call.`;
+           },
+           control.path
+         );
++      case "segmented":
++        return /* @__PURE__ */ jsx13("div", { className: "dialkit-labeled-control", key: control.path, style: { height: 'auto', padding: '2px' }, children: 
++          /* @__PURE__ */ jsx13(
++            SegmentedControl,
++            {
++              options: (control.options ?? []).map(opt => typeof opt === "string" ? { value: opt, label: opt } : opt),
++              value,
++              onChange: (v) => DialStore.updateValue(panel.id, control.path, v)
++            }
++          )
++        });
+       case "color":
+         return /* @__PURE__ */ jsx13(
+           ColorControl,
+diff --git a/node_modules/dialkit/dist/styles.css b/node_modules/dialkit/dist/styles.css
+index 1b78373..b26575e 100644
+--- a/node_modules/dialkit/dist/styles.css
++++ b/node_modules/dialkit/dist/styles.css
+@@ -369,16 +369,17 @@
+ /* Segmented Control */
+ .dialkit-segmented {
+   position: relative;
+-  display: flex;
++  display: grid;
++  grid-template-columns: repeat(2, 1fr);
++  gap: 2px;
+   padding: 2px;
+   background: transparent;
+   border-radius: var(--dial-radius);
++  width: 100%;
+ }
+ 
+ .dialkit-segmented-pill {
+   position: absolute;
+-  top: 2px;
+-  bottom: 2px;
+   background: var(--dial-surface-active);
+   border-radius: 6px;
+   z-index: 0;
+@@ -388,7 +389,6 @@
+ .dialkit-segmented-button {
+   position: relative;
+   z-index: 1;
+-  flex: 1;
+   padding: 8px 12px;
+   font-family: inherit;
+   font-size: 13px;

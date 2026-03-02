@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback } from "react";
 import { DialRoot, useDialKit } from "dialkit";
 import "dialkit/styles.css";
 import { useAudioEngine } from "./hooks/useAudioEngine";
@@ -14,12 +14,14 @@ export default function App() {
 
   // 1. DialKit Tunable Parameters
   const values = useDialKit("V O I D Controls", {
-    shape: { type: 'select', options: ['CUBE', 'SPHERE', 'PYRAMID', 'STAR'], default: 'CUBE' },
+    shape: { type: 'segmented', options: ['CUBE', 'SPHERE', 'PYRAMID', 'STAR'], default: 'CUBE' },
     structure: [1.0, 0.0, 1.0, 0.01],
     flowSpeed: [0.5, -3.0, 3.0, 0.1],
     twistAmount: [0.0, -2.0, 2.0, 0.1],
     
-    track: { type: 'select', options: ['Cinematic', 'Synthwave', 'Deep House', 'EDM'], default: 'Synthwave' },
+    track: { type: 'segmented', options: ['Cinematic', 'Synthwave', 'Deep House', 'EDM'], default: 'Synthwave' },
+    uploadMp3: { type: 'action', label: 'Upload Local MP3' },
+    playPause: { type: 'action', label: '▶ Play / Pause' },
     audioBassScale: [0.2, 0.0, 2.0, 0.1],
     audioTrebleScatter: [1.5, 0.0, 5.0, 0.1],
     audioMidGlow: [0.5, 0.0, 3.0, 0.1],
@@ -31,8 +33,6 @@ export default function App() {
     mouseDisruption: [0.3, 0.0, 10.0, 0.1],
     
     // Actions
-    playPause: { type: 'action', label: '▶ Play / Pause' },
-    uploadMp3: { type: 'action', label: 'Upload Local MP3' },
     reset: { type: 'action', label: '↺ Reset' }
   }, {
     onAction: (action) => {
