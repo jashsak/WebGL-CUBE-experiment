@@ -32,6 +32,7 @@ export class WebGLApp {
   smoothedMid = 0;
   smoothedTreble = 0;
   introTime = 0;
+  audioTime = 0; // Accumulates based on audio volume to drive time-based effects in sync with music
 
   constructor(
     container: HTMLElement,
@@ -120,7 +121,10 @@ export class WebGLApp {
         uAudioMidGlow: { value: 0.2 },
         uAudioTrebleScatter: { value: 0.6 },
         uStructure: { value: 1.0 },
-        uTime: { value: 0 }
+        uTime: { value: 0 },
+        uAudioTime: { value: 0 },
+        uBassSizeBump: { value: 0.0 },
+        uSpeakerConeRadius: { value: 3.0 }
       },
       vertexShader: particleVertexShader,
       fragmentShader: particleFragmentShader,
@@ -163,9 +167,13 @@ export class WebGLApp {
     const { bassAvg, midAvg, trebleAvg } = this.getFrequencies();
     
     // Smooth audio to make the visualizer feel fluid instead of jittery/bouncy
-    this.smoothedBass += (bassAvg - this.smoothedBass) * 0.1;
-    this.smoothedMid += (midAvg - this.smoothedMid) * 0.1;
-    this.smoothedTreble += (trebleAvg - this.smoothedTreble) * 0.1;
+    const smoothFactor = v.audioSmoothing !== undefined ? v.audioSmoothing : 0.2;
+    this.smoothedBass += (bassAvg - this.smoothedBass) * (1.0 - smoothFactor);
+    this.smoothedMid += (midAvg - this.smoothedMid) * (1.0 - smoothFactor);
+    this.smoothedTreble += (trebleAvg - this.smoothedTreble) * (1.0 - smoothFactor);
+    
+    // Accumulate time ONLY based on music volume (so waves stop when music stops)
+    this.audioTime += dt * (this.smoothedMid * 15.0 + this.smoothedBass * 5.0);
 
     // Handle Morphing
     const targetShape = SHAPE_MAP[v.shape] ?? this.currentShapeIdx;
@@ -217,6 +225,9 @@ export class WebGLApp {
       pU.uAudioTrebleScatter.value = v.audioTrebleScatter;
       pU.uStructure.value = currentStructure;
       pU.uTime.value = elapsedTime;
+      pU.uAudioTime.value = this.audioTime;
+      pU.uBassSizeBump.value = v.bassSizeBump !== undefined ? v.bassSizeBump : 0.0;
+      pU.uSpeakerConeRadius.value = v.speakerConeRadius !== undefined ? v.speakerConeRadius : 3.0;
     }
 
     if (this.controls) {
