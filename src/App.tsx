@@ -31,9 +31,9 @@ export default function App() {
     bassSizeBump: [0.41, 0.0, 2.0, 0.01],
     speakerConeRadius: [3.4, 0.1, 10.0, 0.1],
 
-    mouseRadius: [2.5, 0.1, 5.0, 0.1],
-    mouseForce: [1.2, -5.0, 5.0, 0.1],
-    mouseSwirl: [0.5, -10.0, 10.0, 0.1],
+    mouseRadius: [3.0, 0.1, 5.0, 0.1],
+    mouseForce: [-0.2, -5.0, 5.0, 0.1],
+    mouseSwirl: [0.0, -10.0, 10.0, 0.1],
     mouseDisruption: [0.0, 0.0, 10.0, 0.1],
 
     // Actions
