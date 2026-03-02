@@ -26,6 +26,14 @@ export function fillShapeTextures(
 
   const cubeSize = 3, sphereRadius = 2.2, pyramidSize = 3;
 
+  const cd = texCube.image.data as Float32Array;
+  const sd = texSphere.image.data as Float32Array;
+  const pd = texPyramid.image.data as Float32Array;
+  const std = texStar.image.data as Float32Array;
+  const nd = texNoise.image.data as Float32Array;
+  const ptd = dtPosition.image.data as Float32Array;
+  const vtd = dtVelocity.image.data as Float32Array;
+
   for (let i = 0; i < totalParticles; i++) {
     const i4 = i * 4;
 
@@ -45,17 +53,17 @@ export function fillShapeTextures(
     } else {
       cx = (Math.random() - 0.5) * cubeSize; cy = (Math.random() - 0.5) * cubeSize; cz = (Math.random() - 0.5) * cubeSize;
     }
-    texCube.image.data[i4] = cx; texCube.image.data[i4 + 1] = cy; texCube.image.data[i4 + 2] = cz; texCube.image.data[i4 + 3] = 1;
+    cd[i4] = cx; cd[i4 + 1] = cy; cd[i4 + 2] = cz; cd[i4 + 3] = 1;
 
     // Sphere Math
     const isSurface = Math.random() < 0.6;
     const theta = Math.random() * Math.PI * 2;
     const phi = Math.acos((Math.random() * 2) - 1);
     const r = isSurface ? sphereRadius : sphereRadius * Math.cbrt(Math.random());
-    texSphere.image.data[i4] = r * Math.sin(phi) * Math.cos(theta);
-    texSphere.image.data[i4 + 1] = r * Math.sin(phi) * Math.sin(theta);
-    texSphere.image.data[i4 + 2] = r * Math.cos(phi);
-    texSphere.image.data[i4 + 3] = 1;
+    sd[i4] = r * Math.sin(phi) * Math.cos(theta);
+    sd[i4 + 1] = r * Math.sin(phi) * Math.sin(theta);
+    sd[i4 + 2] = r * Math.cos(phi);
+    sd[i4 + 3] = 1;
 
     // Pyramid Math
     const v0 = new THREE.Vector3(1, 1, 1).normalize().multiplyScalar(pyramidSize);
@@ -65,10 +73,10 @@ export function fillShapeTextures(
     let a = Math.random(), b = Math.random(), c = Math.random(), d = Math.random();
     if (Math.random() < 0.4) a = 0; if (Math.random() < 0.1) b = 0;
     const sum = a + b + c + d; a /= sum; b /= sum; c /= sum; d /= sum;
-    texPyramid.image.data[i4] = a * v0.x + b * v1.x + c * v2.x + d * v3.x;
-    texPyramid.image.data[i4 + 1] = a * v0.y + b * v1.y + c * v2.y + d * v3.y;
-    texPyramid.image.data[i4 + 2] = a * v0.z + b * v1.z + c * v2.z + d * v3.z;
-    texPyramid.image.data[i4 + 3] = 1;
+    pd[i4] = a * v0.x + b * v1.x + c * v2.x + d * v3.x;
+    pd[i4 + 1] = a * v0.y + b * v1.y + c * v2.y + d * v3.y;
+    pd[i4 + 2] = a * v0.z + b * v1.z + c * v2.z + d * v3.z;
+    pd[i4 + 3] = 1;
 
     // Star Math
     const st = starTris[Math.floor(Math.random() * 20)];
@@ -82,15 +90,15 @@ export function fillShapeTextures(
     const starX = sa * st[0].x + sb * st[1].x + sc * st[2].x;
     const starY = sa * st[0].y + sb * st[1].y + sc * st[2].y;
     const starZ = sa * st[0].z + sb * st[1].z + sc * st[2].z;
-    texStar.image.data[i4] = starX; texStar.image.data[i4 + 1] = starY; texStar.image.data[i4 + 2] = starZ; texStar.image.data[i4 + 3] = 1;
+    std[i4] = starX; std[i4 + 1] = starY; std[i4 + 2] = starZ; std[i4 + 3] = 1;
 
     // Noise Vector
     const nx = (Math.random() - 0.5) * 2, ny = (Math.random() - 0.5) * 2, nz = (Math.random() - 0.5) * 2;
     const nLen = Math.sqrt(nx * nx + ny * ny + nz * nz);
-    texNoise.image.data[i4] = nx / nLen; texNoise.image.data[i4 + 1] = ny / nLen; texNoise.image.data[i4 + 2] = nz / nLen; texNoise.image.data[i4 + 3] = 1;
+    nd[i4] = nx / nLen; nd[i4 + 1] = ny / nLen; nd[i4 + 2] = nz / nLen; nd[i4 + 3] = 1;
 
     // Init Data
-    dtPosition.image.data[i4] = starX; dtPosition.image.data[i4 + 1] = starY; dtPosition.image.data[i4 + 2] = starZ; dtPosition.image.data[i4 + 3] = 1;
-    dtVelocity.image.data[i4] = 0; dtVelocity.image.data[i4 + 1] = 0; dtVelocity.image.data[i4 + 2] = 0; dtVelocity.image.data[i4 + 3] = 1;
+    ptd[i4] = starX; ptd[i4 + 1] = starY; ptd[i4 + 2] = starZ; ptd[i4 + 3] = 1;
+    vtd[i4] = 0; vtd[i4 + 1] = 0; vtd[i4 + 2] = 0; vtd[i4 + 3] = 1;
   }
 }

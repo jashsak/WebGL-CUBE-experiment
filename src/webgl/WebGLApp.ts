@@ -44,11 +44,22 @@ export class WebGLApp {
     this.getFrequencies = getFrequencies;
     this.onTrackChange = onTrackChange;
 
+    const initialShape = SHAPE_MAP[valuesRef.current.shape] ?? 3;
+    this.currentShapeIdx = initialShape;
+    this.oldShapeIdx = initialShape;
+
     this.scene = new THREE.Scene();
     this.scene.fog = new THREE.FogExp2(0x0a0a0a, 0.03);
 
     this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-    this.camera.position.set(4, 4, 4);
+    
+    // Closer, more face-on view instead of top-down
+    if (initialShape === 4) {
+      this.camera.position.set(0, 0, 6.5);
+    } else {
+      this.camera.position.set(4, 4, 4);
+    }
+    
     this.camera.lookAt(0, 0, 0);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -64,6 +75,8 @@ export class WebGLApp {
     }
 
     this.gpgpu = new GPGPUManager(this.renderer, PARTICLE_COUNT);
+    this.gpgpu.velVar.material.uniforms.uOldShape.value = this.oldShapeIdx;
+    this.gpgpu.velVar.material.uniforms.uCurrentShape.value = this.currentShapeIdx;
     
     this.clock = new THREE.Clock();
     this.raycaster = new THREE.Raycaster();
@@ -152,7 +165,7 @@ export class WebGLApp {
     this.smoothedTreble += (trebleAvg - this.smoothedTreble) * 0.1;
 
     // Handle Morphing
-    const targetShape = SHAPE_MAP[v.shape] ?? 3;
+    const targetShape = SHAPE_MAP[v.shape] ?? this.currentShapeIdx;
     if (targetShape !== this.currentShapeIdx) {
       this.oldShapeIdx = this.currentShapeIdx;
       this.currentShapeIdx = targetShape;
@@ -199,8 +212,16 @@ export class WebGLApp {
       pU.uStructure.value = currentStructure;
     }
 
-    if (this.controls) this.controls.update();
+    if (this.controls) {
+      this.controls.autoRotateSpeed = v.flowSpeed;
+      this.controls.autoRotate = v.flowSpeed !== 0;
+      this.controls.update();
+    }
     this.renderer.render(this.scene, this.camera);
+  }
+
+  setMaskTexture(texture: THREE.DataTexture) {
+    this.gpgpu.setMaskTexture(texture);
   }
 
   destroy() {

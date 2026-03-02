@@ -18,7 +18,7 @@ export default function App() {
     structure: [1.0, 0.0, 1.0, 0.01],
     flowSpeed: [0.5, -3.0, 3.0, 0.1],
     twistAmount: [0.0, -2.0, 2.0, 0.1],
-    
+
     track: { type: 'segmented', options: ['Cinematic', 'Synthwave', 'Deep House', 'EDM'], default: 'Synthwave' },
     uploadMp3: { type: 'action', label: 'Upload Local MP3' },
     playPause: { type: 'action', label: '▶ Play / Pause' },
@@ -26,12 +26,12 @@ export default function App() {
     audioTrebleScatter: [1.5, 0.0, 5.0, 0.1],
     audioMidGlow: [0.5, 0.0, 3.0, 0.1],
     particleSize: [2.0, 1.0, 10.0, 0.1],
-    
+
     mouseRadius: [2.5, 0.1, 5.0, 0.1],
     mouseForce: [1.2, -5.0, 5.0, 0.1],
     mouseSwirl: [0.5, -10.0, 10.0, 0.1],
     mouseDisruption: [0.3, 0.0, 10.0, 0.1],
-    
+
     // Actions
     reset: { type: 'action', label: '↺ Reset' }
   }, {
@@ -80,7 +80,7 @@ export default function App() {
   // 3. WebGL Engine Mount
   useEffect(() => {
     if (!containerRef.current) return;
-    
+
     // Instantiate core wrapper, keeping it out of React state.
     webglAppRef.current = new WebGLApp(
       containerRef.current,
@@ -95,11 +95,11 @@ export default function App() {
             webglAppRef.current.currentTrackIdx = targetTrack;
             const wasPlaying = !audioRef.current.paused;
             audioRef.current.src = TRACKS[targetTrack];
-            
+
             // Dispatch event to ensure AudioContext is connected
             document.dispatchEvent(new CustomEvent('init-audio'));
 
-            if (wasPlaying) audioRef.current.play().catch(() => {});
+            if (wasPlaying) audioRef.current.play().catch(() => { });
           }
         }
       }

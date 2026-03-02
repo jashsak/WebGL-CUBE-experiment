@@ -4,6 +4,7 @@ uniform sampler2D texCube;
 uniform sampler2D texSphere;
 uniform sampler2D texPyramid;
 uniform sampler2D texStar;
+uniform sampler2D texMask;
 uniform sampler2D texNoise;
 
 uniform int uOldShape;
@@ -22,6 +23,7 @@ uniform float uMid;
 uniform float uTreble;
 uniform float uAudioTrebleScatter;
 uniform float uAudioBassScale;
+uniform float uAudioMidGlow;
 uniform float uFlowSpeed;
 uniform float uTwistAmount;
 
@@ -30,6 +32,7 @@ vec3 getShapePos(int shapeIdx, vec2 uv) {
     if (shapeIdx == 1) return texture2D(texSphere, uv).xyz;
     if (shapeIdx == 2) return texture2D(texPyramid, uv).xyz;
     if (shapeIdx == 3) return texture2D(texStar, uv).xyz;
+    if (shapeIdx == 4) return texture2D(texMask, uv).xyz;
     return texture2D(texStar, uv).xyz;
 }
 
@@ -59,7 +62,7 @@ void main() {
     // 5. Audio Forces (Applied to velocity as wind, not rigid target positions)
     float noiseAmplitude = (1.0 - uStructure) * 0.2 + (uTreble * uAudioTrebleScatter * 0.05);
     vec3 audioWind = noiseVec * noiseAmplitude;
-    float updraft = sin(pos.x * 2.0 + uTime * 1.5) * (uMid * 0.02);
+    float updraft = sin(pos.x * 2.0 + uTime * 1.5) * (uMid * uAudioMidGlow * 0.02);
     
     // 6. Mouse Interaction Forces
     vec3 dirToMouse = pos - uMousePos;

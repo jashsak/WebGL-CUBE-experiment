@@ -1,12 +1,9 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useCallback } from "react";
 import { TRACKS, TRACK_MAP } from "../config";
 
 export function useAudioEngine(valuesRef: React.MutableRefObject<any>) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  
-  const [hasStarted, setHasStarted] = useState(false);
-  const [loadingText, setLoadingText] = useState("");
   
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -70,7 +67,6 @@ export function useAudioEngine(valuesRef: React.MutableRefObject<any>) {
       }
 
       const url = URL.createObjectURL(file);
-      const wasPlaying = !audioRef.current.paused;
       audioRef.current.src = url;
       audioRef.current.load();
       
@@ -85,7 +81,7 @@ export function useAudioEngine(valuesRef: React.MutableRefObject<any>) {
   const getFrequencies = useCallback(() => {
     let bassAvg = 0, midAvg = 0, trebleAvg = 0;
     if (analyserRef.current && dataArrayRef.current && audioRef.current && !audioRef.current.paused) {
-      analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+      analyserRef.current.getByteFrequencyData(dataArrayRef.current as any);
       let bassSum = 0, midSum = 0, trebleSum = 0;
       for (let i = 0; i < 10; i++) bassSum += dataArrayRef.current[i];
       for (let i = 10; i < 100; i++) midSum += dataArrayRef.current[i];
@@ -100,8 +96,6 @@ export function useAudioEngine(valuesRef: React.MutableRefObject<any>) {
   return {
     audioRef,
     fileInputRef,
-    hasStarted,
-    loadingText,
     startAudio,
     handleFileUpload,
     getFrequencies

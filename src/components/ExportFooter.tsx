@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 
 export function ExportFooter({ getCode }: { getCode: () => string }) {
   const [copied, setCopied] = useState(false);

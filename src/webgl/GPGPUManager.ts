@@ -23,6 +23,7 @@ export class GPGPUManager {
     const texSphere = this.gpuCompute.createTexture();
     const texPyramid = this.gpuCompute.createTexture();
     const texStar = this.gpuCompute.createTexture();
+    const texMask = this.gpuCompute.createTexture();
     const texNoise = this.gpuCompute.createTexture();
     const dtPosition = this.gpuCompute.createTexture();
     const dtVelocity = this.gpuCompute.createTexture();
@@ -33,6 +34,7 @@ export class GPGPUManager {
     texSphere.needsUpdate = true;
     texPyramid.needsUpdate = true;
     texStar.needsUpdate = true;
+    texMask.needsUpdate = true;
     texNoise.needsUpdate = true;
     dtPosition.needsUpdate = true;
     dtVelocity.needsUpdate = true;
@@ -49,6 +51,7 @@ export class GPGPUManager {
     vU.texSphere = { value: texSphere };
     vU.texPyramid = { value: texPyramid };
     vU.texStar = { value: texStar };
+    vU.texMask = { value: texMask };
     vU.texNoise = { value: texNoise };
     vU.uOldShape = { value: 3 };
     vU.uCurrentShape = { value: 3 };
@@ -64,6 +67,7 @@ export class GPGPUManager {
     vU.uTreble = { value: 0 };
     vU.uAudioTrebleScatter = { value: 0.6 };
     vU.uAudioBassScale = { value: 0.4 };
+    vU.uAudioMidGlow = { value: 0.5 };
     vU.uFlowSpeed = { value: 0.1 };
     vU.uTwistAmount = { value: 1.2 };
 
@@ -75,6 +79,10 @@ export class GPGPUManager {
 
   compute() {
     this.gpuCompute.compute();
+  }
+
+  setMaskTexture(texture: THREE.DataTexture) {
+    this.velVar.material.uniforms.texMask.value = texture;
   }
 
   getCurrentPositionTexture() {
@@ -99,6 +107,7 @@ export class GPGPUManager {
     vU.uMouseDisruption.value = v.mouseDisruption;
     vU.uAudioTrebleScatter.value = v.audioTrebleScatter;
     vU.uAudioBassScale.value = v.audioBassScale;
+    vU.uAudioMidGlow.value = v.audioMidGlow;
     vU.uFlowSpeed.value = v.flowSpeed;
     vU.uTwistAmount.value = v.twistAmount;
 
