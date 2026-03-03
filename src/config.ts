@@ -4,7 +4,7 @@ export const TRACKS = [
   "https://storage.googleapis.com/media-session/sintel/snow-fight.mp3",
   "https://storage.googleapis.com/media-session/caminandes/short.mp3",
   "https://storage.googleapis.com/media-session/big-buck-bunny/prelude.mp3",
-  import.meta.env.BASE_URL + "assets/tracks/Valentino Khan - Deep Down Low (Official Music Video).mp3"
+  import.meta.env.BASE_URL + "assets/tracks/valentino-khan.mp3"
 ];
 
 export const SHAPE_MAP: Record<string, number> = { 'CUBE': 0, 'SPHERE': 1, 'PYRAMID': 2, 'STAR': 3, 'MASK': 4 };

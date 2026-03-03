@@ -154,7 +154,7 @@ export default function MaskPage() {
     );
 
     // Load the GLB shape
-    loadGLBShape(import.meta.env.BASE_URL + 'assets/renders/Ethereal Mask.glb', PARTICLE_COUNT)
+    loadGLBShape(import.meta.env.BASE_URL + 'assets/renders/ethereal-mask.glb', PARTICLE_COUNT)
       .then((texture) => {
         if (webglAppRef.current) {
           webglAppRef.current.setMaskTexture(texture);
@@ -206,7 +206,7 @@ export default function MaskPage() {
       <audio 
         id="mask-audio"
         ref={audioRef} 
-        src={import.meta.env.BASE_URL + "assets/tracks/Valentino Khan - Deep Down Low (Official Music Video).mp3"} 
+        src={import.meta.env.BASE_URL + "assets/tracks/valentino-khan.mp3"} 
         crossOrigin="anonymous" 
         onLoadedMetadata={(e) => {
           e.currentTarget.currentTime = (32 / 100) * e.currentTarget.duration;
