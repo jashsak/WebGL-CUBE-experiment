@@ -68,6 +68,11 @@ export default function MaskPage() {
   }, []);
 
   const togglePlayPause = useCallback(() => {
+    // Request device orientation permission for iOS 13+ devices
+    if (typeof (window as any).DeviceOrientationEvent !== 'undefined' && typeof (window as any).DeviceOrientationEvent.requestPermission === 'function') {
+      (window as any).DeviceOrientationEvent.requestPermission().catch(console.error);
+    }
+
     if (audioRef.current) {
       // Trigger AudioContext initialization just in case
       document.dispatchEvent(new CustomEvent('init-mask-audio'));
@@ -193,6 +198,11 @@ export default function MaskPage() {
 
   // Fallback for autoplay block
   const handleInteraction = () => {
+    // Request device orientation permission for iOS 13+ devices
+    if (typeof (window as any).DeviceOrientationEvent !== 'undefined' && typeof (window as any).DeviceOrientationEvent.requestPermission === 'function') {
+      (window as any).DeviceOrientationEvent.requestPermission().catch(console.error);
+    }
+
     initAudio();
     if (audioRef.current && audioRef.current.paused) {
       audioRef.current.play().catch(() => {});

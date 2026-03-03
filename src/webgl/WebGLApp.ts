@@ -22,6 +22,8 @@ export class WebGLApp {
   mouseScreenPos: THREE.Vector2;
   mouseWorldPos: THREE.Vector3;
 
+  isMobile: boolean = false;
+
   currentShapeIdx = 3;
   oldShapeIdx = 3;
   morphTargetProgress = 1.0;
@@ -95,8 +97,10 @@ export class WebGLApp {
 
     window.addEventListener('resize', this.onResize);
     
+    this.isMobile = window.matchMedia("(pointer: coarse)").matches;
+
     // Only use mouse move on non-touch devices to avoid teleporting cursor on mobile
-    if (!window.matchMedia("(pointer: coarse)").matches) {
+    if (!this.isMobile) {
       window.addEventListener('mousemove', this.onMouseMove);
     } else {
       // On mobile, try to use device orientation for a subtle tilt effect instead
@@ -244,8 +248,16 @@ export class WebGLApp {
       currentStructure = 0.85 + (v.structure - 0.85) * easeOut;
     }
 
+    const currentV = { ...v, structure: currentStructure };
+    if (this.isMobile) {
+      currentV.mouseRadius = 0;
+      currentV.mouseForce = 0;
+      currentV.mouseSwirl = 0;
+      currentV.mouseDisruption = 0;
+    }
+
     // Update FBO
-    this.gpgpu.updateUniforms(elapsedTime, this.smoothedBass, this.smoothedMid, this.smoothedTreble, { ...v, structure: currentStructure }, this.mouseWorldPos);
+    this.gpgpu.updateUniforms(elapsedTime, this.smoothedBass, this.smoothedMid, this.smoothedTreble, currentV, this.mouseWorldPos);
     this.gpgpu.compute();
 
     // Update Particles
