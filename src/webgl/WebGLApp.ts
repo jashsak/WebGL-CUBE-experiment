@@ -90,10 +90,23 @@ export class WebGLApp {
 
     this.onResize = this.onResize.bind(this);
     this.onMouseMove = this.onMouseMove.bind(this);
+    this.onDeviceOrientation = this.onDeviceOrientation.bind(this);
     this.update = this.update.bind(this);
 
     window.addEventListener('resize', this.onResize);
-    window.addEventListener('mousemove', this.onMouseMove);
+    
+    // Only use mouse move on non-touch devices to avoid teleporting cursor on mobile
+    if (!window.matchMedia("(pointer: coarse)").matches) {
+      window.addEventListener('mousemove', this.onMouseMove);
+    } else {
+      // On mobile, try to use device orientation for a subtle tilt effect instead
+      // Note: iOS 13+ requires explicit permission which would need a UI button,
+      // but this will work on Android and older iOS automatically.
+      window.addEventListener('deviceorientation', this.onDeviceOrientation);
+      
+      // Place the interaction point in the center by default on mobile
+      this.mouseWorldPos.set(0, 0, 0);
+    }
 
     this.update();
   }
@@ -149,6 +162,29 @@ export class WebGLApp {
     this.mouseScreenPos.y = -(ev.clientY / window.innerHeight) * 2 + 1;
     
     // Convert to world pos on a plane facing the camera for Raycasting.
+    this.raycaster.setFromCamera(this.mouseScreenPos, this.camera);
+    const normal = new THREE.Vector3().copy(this.camera.position).normalize();
+    const plane = new THREE.Plane(normal, 0);
+    this.raycaster.ray.intersectPlane(plane, this.mouseWorldPos);
+  }
+
+  onDeviceOrientation(ev: DeviceOrientationEvent) {
+    // Subtle tilt effect for mobile
+    // gamma is left-to-right tilt in degrees, where right is positive
+    // beta is front-to-back tilt in degrees, where front is positive
+    const tiltX = ev.gamma || 0; 
+    const tiltY = ev.beta || 0;
+
+    // Clamp and normalize the tilt to a small range to avoid it moving too much
+    // We assume a normal holding angle of beta around 45 degrees
+    const normalizedX = Math.max(-1, Math.min(1, tiltX / 45));
+    const normalizedY = Math.max(-1, Math.min(1, (tiltY - 45) / 45));
+
+    // Map to screen coordinates (subtle movement, e.g., max 50% of screen)
+    this.mouseScreenPos.x = normalizedX * 0.5;
+    this.mouseScreenPos.y = -normalizedY * 0.5;
+
+    // Convert to world pos on a plane facing the camera
     this.raycaster.setFromCamera(this.mouseScreenPos, this.camera);
     const normal = new THREE.Vector3().copy(this.camera.position).normalize();
     const plane = new THREE.Plane(normal, 0);
@@ -245,6 +281,7 @@ export class WebGLApp {
   destroy() {
     window.removeEventListener('resize', this.onResize);
     window.removeEventListener('mousemove', this.onMouseMove);
+    window.removeEventListener('deviceorientation', this.onDeviceOrientation);
     cancelAnimationFrame(this.rafId);
     if (this.container && this.renderer) {
       this.container.removeChild(this.renderer.domElement);
