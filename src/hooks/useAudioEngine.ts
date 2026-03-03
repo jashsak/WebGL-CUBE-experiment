@@ -27,19 +27,25 @@ export function useAudioEngine(valuesRef: React.MutableRefObject<any>) {
 
       const url = TRACKS[TRACK_MAP[valuesRef.current.track] ?? 0];
       
-      if (!audioRef.current?.src || !audioRef.current.src.includes('blob')) {
-        try {
-          const res = await fetch(url);
-          if (res.ok) {
-            const blob = await res.blob();
-            if (audioRef.current) audioRef.current.src = URL.createObjectURL(blob);
-          } else {
+      if (!audioRef.current?.src || (!audioRef.current.src.includes('blob') && !audioRef.current.src.endsWith(url))) {
+        // If it's a relative local URL, just set the src directly
+        if (url.startsWith('/')) {
             if (audioRef.current) audioRef.current.src = url;
-          }
-        } catch (err) {
-          if (audioRef.current) audioRef.current.src = url;
+            audioRef.current?.load();
+        } else {
+            try {
+              const res = await fetch(url);
+              if (res.ok) {
+                const blob = await res.blob();
+                if (audioRef.current) audioRef.current.src = URL.createObjectURL(blob);
+              } else {
+                if (audioRef.current) audioRef.current.src = url;
+              }
+            } catch (err) {
+              if (audioRef.current) audioRef.current.src = url;
+            }
+            audioRef.current?.load();
         }
-        audioRef.current?.load();
       }
       
     } catch (err) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useCallback } from "react";
-import { DialRoot, useDialKit } from "dialkit";
+import { DialRoot, useDialKit, DialStore } from "dialkit";
 import "dialkit/styles.css";
 import { useAudioEngine } from "./hooks/useAudioEngine";
 import { WebGLApp } from "./webgl/WebGLApp";
@@ -19,8 +19,9 @@ export default function App() {
     flowSpeed: [0.5, -3.0, 3.0, 0.1],
     twistAmount: [0.0, -2.0, 2.0, 0.1],
 
-    track: { type: 'segmented', options: ['Cinematic', 'Synthwave', 'Deep House', 'EDM'], default: 'Synthwave' },
+    track: { type: 'segmented', options: ['Cinematic', 'Synthwave', 'Deep House', 'Deep Down Low'], default: 'Synthwave' },
     uploadMp3: { type: 'action', label: 'Upload Local MP3' },
+    audioProgress: [0, 0, 100, 0.1],
     playPause: { type: 'action', label: '▶ Play / Pause' },
     audioSmoothing: [0.52, 0.0, 0.99, 0.01],
     audioBassScale: [0.06, 0.0, 2.0, 0.01],
@@ -72,6 +73,38 @@ export default function App() {
     getFrequencies,
     startAudio
   } = useAudioEngine(valuesRef);
+
+  const lastProgrammaticUpdate = useRef(0);
+
+  const updateScrubber = useCallback(() => {
+    if (audioRef.current && audioRef.current.duration) {
+      const pct = (audioRef.current.currentTime / audioRef.current.duration) * 100;
+      lastProgrammaticUpdate.current = pct;
+      const panels = DialStore.getPanels();
+      const panel = panels.find(p => p.name === "V O I D Controls");
+      if (panel) {
+        DialStore.updateValue(panel.id, "audioProgress", pct);
+      }
+    }
+  }, [audioRef]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.addEventListener('timeupdate', updateScrubber);
+      return () => audio.removeEventListener('timeupdate', updateScrubber);
+    }
+  }, [updateScrubber, audioRef]);
+
+  // Handle user scrubbing
+  useEffect(() => {
+    if (Math.abs(values.audioProgress - lastProgrammaticUpdate.current) > 0.5) {
+      if (audioRef.current && audioRef.current.duration) {
+        audioRef.current.currentTime = (values.audioProgress / 100) * audioRef.current.duration;
+        lastProgrammaticUpdate.current = values.audioProgress;
+      }
+    }
+  }, [values.audioProgress, audioRef]);
 
   useEffect(() => {
     const handleInitAudio = () => {
