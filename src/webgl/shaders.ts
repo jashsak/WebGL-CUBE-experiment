@@ -5,6 +5,7 @@ uniform sampler2D texSphere;
 uniform sampler2D texPyramid;
 uniform sampler2D texStar;
 uniform sampler2D texMask;
+uniform sampler2D texBunny;
 uniform sampler2D texNoise;
 
 uniform int uOldShape;
@@ -27,6 +28,7 @@ vec3 getShapePos(int shapeIdx, vec2 uv) {
     if (shapeIdx == 2) return texture2D(texPyramid, uv).xyz;
     if (shapeIdx == 3) return texture2D(texStar, uv).xyz;
     if (shapeIdx == 4) return texture2D(texMask, uv).xyz;
+    if (shapeIdx == 5) return texture2D(texBunny, uv).xyz;
     return texture2D(texStar, uv).xyz;
 }
 
