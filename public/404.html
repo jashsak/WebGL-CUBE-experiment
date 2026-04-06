@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <script>
+      // GitHub Pages SPA redirect
+      // Converts /WebGL-CUBE-experiment/bunny -> /WebGL-CUBE-experiment/?p=/bunny
+      var path = window.location.pathname;
+      var search = window.location.search;
+      var hash = window.location.hash;
+      // Extract the sub-path after the base
+      var base = '/WebGL-CUBE-experiment/';
+      var subPath = path.replace(base, '/');
+      if (subPath !== '/' && subPath !== '') {
+        window.location.replace(base + '?p=' + subPath + search + hash);
+      }
+    </script>
+  </head>
+  <body></body>
+</html>
