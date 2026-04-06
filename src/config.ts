@@ -7,5 +7,5 @@ export const TRACKS = [
   import.meta.env.BASE_URL + "assets/tracks/valentino-khan.mp3"
 ];
 
-export const SHAPE_MAP: Record<string, number> = { 'CUBE': 0, 'SPHERE': 1, 'PYRAMID': 2, 'STAR': 3, 'MASK': 4 };
+export const SHAPE_MAP: Record<string, number> = { 'CUBE': 0, 'SPHERE': 1, 'PYRAMID': 2, 'STAR': 3, 'MASK': 4, 'BUNNY': 5 };
 export const TRACK_MAP: Record<string, number> = { 'Cinematic': 0, 'Synthwave': 1, 'Deep House': 2, 'Deep Down Low': 3 };

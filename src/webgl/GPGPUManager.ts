@@ -24,6 +24,7 @@ export class GPGPUManager {
     const texPyramid = this.gpuCompute.createTexture();
     const texStar = this.gpuCompute.createTexture();
     const texMask = this.gpuCompute.createTexture();
+    const texBunny = this.gpuCompute.createTexture();
     const texNoise = this.gpuCompute.createTexture();
     const dtPosition = this.gpuCompute.createTexture();
     const dtVelocity = this.gpuCompute.createTexture();
@@ -35,6 +36,7 @@ export class GPGPUManager {
     texPyramid.needsUpdate = true;
     texStar.needsUpdate = true;
     texMask.needsUpdate = true;
+    texBunny.needsUpdate = true;
     texNoise.needsUpdate = true;
     dtPosition.needsUpdate = true;
     dtVelocity.needsUpdate = true;
@@ -52,6 +54,7 @@ export class GPGPUManager {
     vU.texPyramid = { value: texPyramid };
     vU.texStar = { value: texStar };
     vU.texMask = { value: texMask };
+    vU.texBunny = { value: texBunny };
     vU.texNoise = { value: texNoise };
     vU.uOldShape = { value: 3 };
     vU.uCurrentShape = { value: 3 };
@@ -83,6 +86,10 @@ export class GPGPUManager {
 
   setMaskTexture(texture: THREE.DataTexture) {
     this.velVar.material.uniforms.texMask.value = texture;
+  }
+
+  setBunnyTexture(texture: THREE.DataTexture) {
+    this.velVar.material.uniforms.texBunny.value = texture;
   }
 
   getCurrentPositionTexture() {

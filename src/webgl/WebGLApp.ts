@@ -57,7 +57,7 @@ export class WebGLApp {
     this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
     
     // Closer, more face-on view instead of top-down
-    if (initialShape === 4) {
+    if (initialShape === 4 || initialShape === 5) {
       this.camera.position.set(0, 0, 6.5);
     } else {
       this.camera.position.set(4, 4, 4);
@@ -288,6 +288,10 @@ export class WebGLApp {
 
   setMaskTexture(texture: THREE.DataTexture) {
     this.gpgpu.setMaskTexture(texture);
+  }
+
+  setBunnyTexture(texture: THREE.DataTexture) {
+    this.gpgpu.setBunnyTexture(texture);
   }
 
   destroy() {
