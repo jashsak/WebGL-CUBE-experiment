@@ -4,8 +4,11 @@ import App from './App.tsx'
 import MaskPage from './MaskPage.tsx'
 import BunnyPage from './BunnyPage.tsx'
 
-const isMaskPage = window.location.pathname.includes('/mask') || window.location.search.includes('page=mask') || window.location.hash.includes('mask');
-const isBunnyPage = window.location.pathname.includes('/bunny') || window.location.search.includes('page=bunny') || window.location.hash.includes('bunny');
+// Support path (/bunny), query (?page=bunny), hash (#bunny), and SPA redirect (?p=/bunny)
+const loc = window.location;
+const redirectPath = new URLSearchParams(loc.search).get('p') || '';
+const isMaskPage = loc.pathname.includes('/mask') || loc.search.includes('page=mask') || loc.hash.includes('mask') || redirectPath.includes('/mask');
+const isBunnyPage = loc.pathname.includes('/bunny') || loc.search.includes('page=bunny') || loc.hash.includes('bunny') || redirectPath.includes('/bunny');
 
 function getPage() {
   if (isBunnyPage) return <BunnyPage />;
