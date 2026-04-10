@@ -7,6 +7,7 @@ import "dialkit/styles.css";
 import { WebGLApp } from "./webgl/WebGLApp";
 import { PARTICLE_COUNT } from "./config";
 import { loadGLBShape } from "./webgl/loadGLBShape";
+import { OrbitingEggs } from "./webgl/OrbitingEggs";
 
 type AudioMode = 'track' | 'live';
 
@@ -29,7 +30,7 @@ export default function BunnyPage() {
     audioBassScale: [0.06, 0.0, 2.0, 0.01],
     audioTrebleScatter: [0.04, 0.0, 1.0, 0.01],
     audioMidGlow: [0.09, 0.0, 2.0, 0.01],
-    particleSize: [1.0, 1.0, 10.0, 0.1],
+    particleSize: [1.2, 1.0, 10.0, 0.1],
 
     audioSmoothing: [0.06, 0.0, 0.99, 0.01],
     bassSizeBump: [0.41, 0.0, 2.0, 0.01],
@@ -39,6 +40,12 @@ export default function BunnyPage() {
     mouseForce: [-0.2, -5.0, 5.0, 0.1],
     mouseSwirl: [0.0, -10.0, 10.0, 0.1],
     mouseDisruption: [0.0, 0.0, 10.0, 0.1],
+
+    orbitSpeed: [0.2, -3.0, 3.0, 0.1],
+    eggCount: [6, 2, 20, 2],
+    orbitRadius: [3.1, 1.0, 8.0, 0.1],
+    orbitTilt: [19, -90, 90, 1],
+    eggScale: [0.9, 0.1, 2.0, 0.05],
 
     audioProgress: [32, 0, 100, 0.1],
     reset: { type: 'action', label: '↺ Reset' }
@@ -60,10 +67,14 @@ export default function BunnyPage() {
   const liveStreamRef = useRef<MediaStream | null>(null);
   const liveSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const trackSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const orbitingEggsRef = useRef<OrbitingEggs | null>(null);
+  const orbitRafRef = useRef(0);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioMode, setAudioMode] = useState<AudioMode>('track');
   const [isLiveActive, setIsLiveActive] = useState(false);
+  const audioModeRef = useRef<AudioMode>('track');
+  const isLiveActiveRef = useRef(false);
   const [audioDevices, setAudioDevices] = useState<AudioDevice[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
   const [showDevicePicker, setShowDevicePicker] = useState(false);
@@ -225,12 +236,14 @@ export default function BunnyPage() {
       gainNodeRef.current!.connect(analyserRef.current!);
 
       setIsLiveActive(true);
+      isLiveActiveRef.current = true;
 
       // Refresh device labels (they become available after permission grant)
       await refreshDevices();
     } catch (err) {
       console.error('Failed to start live audio:', err);
       setIsLiveActive(false);
+      isLiveActiveRef.current = false;
     }
   }, [ensureAudioContext, refreshDevices]);
 
@@ -245,6 +258,7 @@ export default function BunnyPage() {
       liveStreamRef.current = null;
     }
     setIsLiveActive(false);
+    isLiveActiveRef.current = false;
   }, []);
 
   // Switch audio mode
@@ -261,10 +275,12 @@ export default function BunnyPage() {
       }
       await refreshDevices();
       setAudioMode('live');
+      audioModeRef.current = 'live';
       setShowDevicePicker(true);
     } else {
       stopLiveAudio();
       setAudioMode('track');
+      audioModeRef.current = 'track';
       setShowDevicePicker(false);
 
       // Reconnect analyser to destination for track playback
@@ -283,11 +299,12 @@ export default function BunnyPage() {
   }, [gainValue]);
 
   // getFrequencies reads from the analyser — works for both track and live
+  // Stable ref: no state deps so WebGL effects don't re-mount on mode switches
   const getFrequencies = useCallback(() => {
     let bassAvg = 0, midAvg = 0, trebleAvg = 0;
 
-    const isActive = audioMode === 'live'
-      ? isLiveActive
+    const isActive = audioModeRef.current === 'live'
+      ? isLiveActiveRef.current
       : (audioRef.current && !audioRef.current.paused);
 
     if (analyserRef.current && dataArrayRef.current && isActive) {
@@ -301,7 +318,7 @@ export default function BunnyPage() {
       trebleAvg = (trebleSum / 156) / 255;
     }
     return { bassAvg, midAvg, trebleAvg };
-  }, [audioMode, isLiveActive]);
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -329,33 +346,73 @@ export default function BunnyPage() {
     };
   }, [getFrequencies]);
 
+  // Orbiting eggs: load models, run animation loop
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (audioRef.current && audioMode === 'track') {
-        initTrackAudio();
-        audioRef.current.play().catch((err) => {
-          console.warn("Autoplay prevented. User interaction required.", err);
-        });
-      }
-    }, 7000);
+    if (!webglAppRef.current) return;
 
-    return () => clearTimeout(timer);
-  }, [initTrackAudio, audioMode]);
+    const eggs = new OrbitingEggs(webglAppRef.current.scene);
+    orbitingEggsRef.current = eggs;
+
+    eggs.loadModels(
+      import.meta.env.BASE_URL + 'assets/renders/egg-a.glb',
+      import.meta.env.BASE_URL + 'assets/renders/egg-b.glb'
+    ).then(() => {
+      // Trigger initial build once models are loaded
+      eggs.update(0, {
+        speed: valuesRef.current.orbitSpeed,
+        count: valuesRef.current.eggCount,
+        radius: valuesRef.current.orbitRadius,
+        tilt: valuesRef.current.orbitTilt,
+        eggScale: valuesRef.current.eggScale,
+        bass: 0, mid: 0, treble: 0,
+      });
+    }).catch((err) => {
+      console.error("Failed to load egg models:", err);
+    });
+
+    let lastTime = performance.now();
+    const animate = () => {
+      orbitRafRef.current = requestAnimationFrame(animate);
+      const now = performance.now();
+      const dt = (now - lastTime) / 1000;
+      lastTime = now;
+
+      const v = valuesRef.current;
+      const freq = getFrequencies();
+      eggs.update(dt, {
+        speed: v.orbitSpeed,
+        count: v.eggCount,
+        radius: v.orbitRadius,
+        tilt: v.orbitTilt,
+        eggScale: v.eggScale,
+        bass: freq.bassAvg,
+        mid: freq.midAvg,
+        treble: freq.trebleAvg,
+      });
+    };
+    orbitRafRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(orbitRafRef.current);
+      eggs.destroy();
+      orbitingEggsRef.current = null;
+    };
+  }, [getFrequencies]); // same dep as WebGLApp effect so they stay in sync
 
   useEffect(() => {
     const handleInitAudio = () => {
-      if (audioMode === 'track') initTrackAudio();
+      if (audioModeRef.current === 'track') initTrackAudio();
     };
     document.addEventListener('init-bunny-audio', handleInitAudio);
     return () => document.removeEventListener('init-bunny-audio', handleInitAudio);
-  }, [initTrackAudio, audioMode]);
+  }, [initTrackAudio]);
 
   const handleInteraction = () => {
     if (typeof (window as any).DeviceOrientationEvent !== 'undefined' && typeof (window as any).DeviceOrientationEvent.requestPermission === 'function') {
       (window as any).DeviceOrientationEvent.requestPermission().catch(console.error);
     }
 
-    if (audioMode === 'track') {
+    if (audioModeRef.current === 'track') {
       initTrackAudio();
       if (audioRef.current && audioRef.current.paused) {
         audioRef.current.play().catch(() => {});
