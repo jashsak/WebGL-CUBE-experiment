@@ -913,9 +913,7 @@ export default function BunnyPage() {
         </motion.div>
       )}
 
-      <div style={{ display: uiHidden ? 'none' : 'block' }}>
-        <DialRoot defaultOpen={false} />
-      </div>
+      {!uiHidden && <DialRoot defaultOpen={false} />}
 
       {/* Hotkey legend — bottom-left, subtle */}
       {!uiHidden && (
