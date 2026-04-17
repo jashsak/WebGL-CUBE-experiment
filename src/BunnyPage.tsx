@@ -3,6 +3,7 @@
 import { useRef, useEffect, useCallback, useState } from "react";
 import { DialRoot, useDialKit, DialStore } from "dialkit";
 import { motion, AnimatePresence } from "motion/react";
+import * as THREE from "three";
 import "dialkit/styles.css";
 import { WebGLApp } from "./webgl/WebGLApp";
 import { PARTICLE_COUNT } from "./config";
@@ -14,6 +15,79 @@ type AudioMode = 'track' | 'live';
 interface AudioDevice {
   deviceId: string;
   label: string;
+}
+
+interface PresetValues {
+  structure: number;
+  flowSpeed: number;
+  twistAmount: number;
+  audioBassScale: number;
+  audioTrebleScatter: number;
+  audioMidGlow: number;
+  particleSize: number;
+  audioSmoothing: number;
+  bassSizeBump: number;
+  speakerConeRadius: number;
+  mouseRadius: number;
+  mouseForce: number;
+  mouseSwirl: number;
+  mouseDisruption: number;
+  orbitSpeed: number;
+  eggCount: number;
+  orbitRadius: number;
+  orbitTilt: number;
+  eggScale: number;
+}
+
+interface Preset {
+  name: string;
+  values: PresetValues;
+}
+
+const DEFAULT_PRESETS: Preset[] = [
+  {
+    name: "Preset 1",
+    values: {
+      structure: 1.0, flowSpeed: 0.3, twistAmount: 0.0,
+      audioBassScale: 0.12, audioTrebleScatter: 0.0, audioMidGlow: 0.09,
+      particleSize: 1.2, audioSmoothing: 0.06, bassSizeBump: 0.41, speakerConeRadius: 3.4,
+      mouseRadius: 0.1, mouseForce: -5.0, mouseSwirl: -10.0, mouseDisruption: 0.0,
+      orbitSpeed: -0.1, eggCount: 6, orbitRadius: 3.1, orbitTilt: 19, eggScale: 0.9,
+    },
+  },
+  {
+    name: "Preset 2",
+    values: {
+      structure: 1.0, flowSpeed: -0.3, twistAmount: 0.0,
+      audioBassScale: 0.06, audioTrebleScatter: 0.04, audioMidGlow: 0.09,
+      particleSize: 1.2, audioSmoothing: 0.06, bassSizeBump: 0.41, speakerConeRadius: 3.4,
+      mouseRadius: 0.1, mouseForce: -5.0, mouseSwirl: -10.0, mouseDisruption: 0.0,
+      orbitSpeed: -0.2, eggCount: 6, orbitRadius: 3.1, orbitTilt: 19, eggScale: 0.9,
+    },
+  },
+];
+
+const PRESETS_LS_KEY = "bunny-presets-v1";
+
+const EGG_PALETTE: { name: string; color: THREE.Color }[] = [
+  { name: "White",  color: new THREE.Color(1.0, 1.0, 1.0) },
+  { name: "Pink",   color: new THREE.Color(1.0, 0.35, 0.75) },
+  { name: "Cyan",   color: new THREE.Color(0.35, 0.9, 1.0) },
+  { name: "Green",  color: new THREE.Color(0.5, 1.0, 0.5) },
+  { name: "Orange", color: new THREE.Color(1.0, 0.6, 0.2) },
+  { name: "Purple", color: new THREE.Color(0.75, 0.4, 1.0) },
+];
+
+function loadPresetsFromStorage(): Preset[] {
+  try {
+    const raw = localStorage.getItem(PRESETS_LS_KEY);
+    if (!raw) return DEFAULT_PRESETS;
+    const parsed = JSON.parse(raw) as Preset[];
+    if (!Array.isArray(parsed) || parsed.length !== 2) return DEFAULT_PRESETS;
+    return parsed;
+  } catch {
+    return DEFAULT_PRESETS;
+  }
 }
 
 export default function BunnyPage() {
@@ -79,6 +153,83 @@ export default function BunnyPage() {
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
   const [showDevicePicker, setShowDevicePicker] = useState(false);
   const [gainValue, setGainValue] = useState(1.0);
+
+  const [uiHidden, setUiHidden] = useState(false);
+  const [eggColorIndex, setEggColorIndex] = useState(0);
+  const eggColorIndexRef = useRef(0);
+  eggColorIndexRef.current = eggColorIndex;
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimerRef = useRef<number | null>(null);
+  const presetsRef = useRef<Preset[]>(
+    typeof window !== 'undefined' ? loadPresetsFromStorage() : DEFAULT_PRESETS
+  );
+  const orbitingEggsReadyRef = useRef(false);
+
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+    if (toastTimerRef.current !== null) window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => setToast(null), 1500);
+  }, []);
+
+  const applyPreset = useCallback((index: number) => {
+    const panels = DialStore.getPanels();
+    const panel = panels.find(p => p.name === "Bunny Page Controls");
+    if (!panel) return;
+    const preset = presetsRef.current[index];
+    if (!preset) return;
+    for (const [key, value] of Object.entries(preset.values)) {
+      DialStore.updateValue(panel.id, key, value);
+    }
+    showToast(`${preset.name} applied`);
+  }, [showToast]);
+
+  const savePreset = useCallback((index: number) => {
+    const v = valuesRef.current;
+    const snapshot: PresetValues = {
+      structure: v.structure, flowSpeed: v.flowSpeed, twistAmount: v.twistAmount,
+      audioBassScale: v.audioBassScale, audioTrebleScatter: v.audioTrebleScatter, audioMidGlow: v.audioMidGlow,
+      particleSize: v.particleSize, audioSmoothing: v.audioSmoothing, bassSizeBump: v.bassSizeBump,
+      speakerConeRadius: v.speakerConeRadius,
+      mouseRadius: v.mouseRadius, mouseForce: v.mouseForce, mouseSwirl: v.mouseSwirl, mouseDisruption: v.mouseDisruption,
+      orbitSpeed: v.orbitSpeed, eggCount: v.eggCount, orbitRadius: v.orbitRadius, orbitTilt: v.orbitTilt, eggScale: v.eggScale,
+    };
+    const next = [...presetsRef.current];
+    next[index] = { name: `Preset ${index + 1}`, values: snapshot };
+    presetsRef.current = next;
+    try { localStorage.setItem(PRESETS_LS_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+    showToast(`Preset ${index + 1} saved`);
+  }, [showToast]);
+
+  const resetPresets = useCallback(() => {
+    presetsRef.current = DEFAULT_PRESETS;
+    try { localStorage.removeItem(PRESETS_LS_KEY); } catch { /* ignore */ }
+    showToast("Presets reset to defaults");
+  }, [showToast]);
+
+  const bumpDial = useCallback((key: 'eggCount' | 'eggScale' | 'orbitTilt', direction: number) => {
+    const panels = DialStore.getPanels();
+    const panel = panels.find(p => p.name === "Bunny Page Controls");
+    if (!panel) return;
+    const bounds = {
+      eggCount:  { min: 2,    max: 20,  step: 2 },
+      eggScale:  { min: 0.1,  max: 2.0, step: 0.05 },
+      orbitTilt: { min: -90,  max: 90,  step: 1 },
+    }[key];
+    const current = valuesRef.current[key] as number;
+    const raw = current + direction * bounds.step;
+    // Snap to step grid and clamp
+    const snapped = Math.round(raw / bounds.step) * bounds.step;
+    const clamped = Math.min(bounds.max, Math.max(bounds.min, snapped));
+    const rounded = Math.round(clamped * 1000) / 1000;
+    DialStore.updateValue(panel.id, key, rounded);
+    const labelMap: Record<string, string> = {
+      eggCount: 'Egg Count',
+      eggScale: 'Egg Scale',
+      orbitTilt: 'Orbit Tilt',
+    };
+    const display = key === 'eggCount' ? String(rounded) : rounded.toFixed(key === 'eggScale' ? 2 : 0);
+    showToast(`${labelMap[key]}: ${display}`);
+  }, [showToast]);
 
   // Track play/pause state for the audio element
   useEffect(() => {
@@ -237,6 +388,7 @@ export default function BunnyPage() {
 
       setIsLiveActive(true);
       isLiveActiveRef.current = true;
+      setShowDevicePicker(false);
 
       // Refresh device labels (they become available after permission grant)
       await refreshDevices();
@@ -366,6 +518,9 @@ export default function BunnyPage() {
         eggScale: valuesRef.current.eggScale,
         bass: 0, mid: 0, treble: 0,
       });
+      // Apply current color (in case user already cycled before load finished)
+      eggs.setColor(EGG_PALETTE[eggColorIndexRef.current].color);
+      orbitingEggsReadyRef.current = true;
     }).catch((err) => {
       console.error("Failed to load egg models:", err);
     });
@@ -429,6 +584,63 @@ export default function BunnyPage() {
     };
   }, []);
 
+  // Apply egg color whenever index changes
+  useEffect(() => {
+    if (orbitingEggsRef.current) {
+      orbitingEggsRef.current.setColor(EGG_PALETTE[eggColorIndex].color);
+    }
+  }, [eggColorIndex]);
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
+
+      // Shift combos: save / reset presets
+      if (e.shiftKey) {
+        if (e.code === 'Digit1') { savePreset(0); e.preventDefault(); return; }
+        if (e.code === 'Digit2') { savePreset(1); e.preventDefault(); return; }
+        if (e.code === 'Digit0') { resetPresets(); e.preventDefault(); return; }
+      }
+
+      switch (e.key) {
+        case '1': applyPreset(0); break;
+        case '2': applyPreset(1); break;
+        case '[': bumpDial('eggCount', -1); break;
+        case ']': bumpDial('eggCount', +1); break;
+        case '-':
+        case '_': bumpDial('eggScale', -1); break;
+        case '=':
+        case '+': bumpDial('eggScale', +1); break;
+        case ',':
+        case '<': bumpDial('orbitTilt', -1); break;
+        case '.':
+        case '>': bumpDial('orbitTilt', +1); break;
+        case 'c':
+        case 'C': {
+          setEggColorIndex(i => {
+            const next = (i + 1) % EGG_PALETTE.length;
+            showToast(`Color: ${EGG_PALETTE[next].name}`);
+            return next;
+          });
+          break;
+        }
+        case 'h':
+        case 'H': {
+          setUiHidden(v => {
+            showToast(v ? "UI shown" : "UI hidden");
+            return !v;
+          });
+          break;
+        }
+        default: return;
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [applyPreset, savePreset, resetPresets, bumpDial, showToast]);
+
   const pillStyle: React.CSSProperties = {
     padding: '6px 14px',
     borderRadius: '20px',
@@ -481,7 +693,7 @@ export default function BunnyPage() {
         top: '24px',
         left: '50%',
         transform: 'translateX(-50%)',
-        display: 'flex',
+        display: uiHidden ? 'none' : 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         gap: '12px',
@@ -506,7 +718,13 @@ export default function BunnyPage() {
             TRACK
           </button>
           <button
-            onClick={() => switchMode('live')}
+            onClick={() => {
+              if (audioMode === 'live') {
+                setShowDevicePicker(v => !v);
+              } else {
+                switchMode('live');
+              }
+            }}
             style={audioMode === 'live' ? activePill : inactivePill}
           >
             LIVE
@@ -613,7 +831,7 @@ export default function BunnyPage() {
       </div>
 
       {/* Play/pause button — only shown in track mode */}
-      {audioMode === 'track' && (
+      {audioMode === 'track' && !uiHidden && (
         <button
           onClick={togglePlayPause}
           style={{
@@ -658,7 +876,7 @@ export default function BunnyPage() {
       )}
 
       {/* Live active indicator */}
-      {audioMode === 'live' && isLiveActive && (
+      {audioMode === 'live' && isLiveActive && !uiHidden && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -695,7 +913,65 @@ export default function BunnyPage() {
         </motion.div>
       )}
 
-      <DialRoot defaultOpen={false} />
+      <div style={{ display: uiHidden ? 'none' : 'block' }}>
+        <DialRoot defaultOpen={false} />
+      </div>
+
+      {/* Hotkey legend — bottom-left, subtle */}
+      {!uiHidden && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '16px',
+            left: '16px',
+            fontSize: '10px',
+            lineHeight: 1.6,
+            letterSpacing: '0.3px',
+            color: 'rgba(255,255,255,0.35)',
+            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+            pointerEvents: 'none',
+            userSelect: 'none',
+            zIndex: 40,
+          }}
+        >
+          <div>1 / 2 &nbsp;apply preset &nbsp;·&nbsp; ⇧1 / ⇧2 save &nbsp;·&nbsp; ⇧0 reset</div>
+          <div>[ ] count &nbsp;·&nbsp; - = scale &nbsp;·&nbsp; , . tilt &nbsp;·&nbsp; C color &nbsp;·&nbsp; H hide</div>
+        </div>
+      )}
+
+      {/* Toast feedback for hotkey actions */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            key={toast}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.15 }}
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              padding: '10px 18px',
+              borderRadius: '12px',
+              backgroundColor: 'rgba(20, 20, 20, 0.85)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              color: '#fff',
+              fontSize: '13px',
+              fontWeight: 600,
+              letterSpacing: '0.5px',
+              pointerEvents: 'none',
+              zIndex: 200,
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+            }}
+          >
+            {toast}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

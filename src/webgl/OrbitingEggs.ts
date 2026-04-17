@@ -34,13 +34,14 @@ void main() {
 `;
 
 const eggFragmentShader = `
+uniform vec3 uColor;
 varying float vAlpha;
 
 void main() {
     vec2 xy = gl_PointCoord.xy - vec2(0.5);
     float ll = length(xy);
     if (ll > 0.5) discard;
-    gl_FragColor = vec4(1.0, 1.0, 1.0, smoothstep(0.5, 0.1, ll) * vAlpha * 0.8);
+    gl_FragColor = vec4(uColor, smoothstep(0.5, 0.1, ll) * vAlpha * 0.8);
 }
 `;
 
@@ -130,7 +131,7 @@ async function sampleGLBPositions(url: string, count: number): Promise<Float32Ar
   return positions;
 }
 
-function createEggPoints(positions: Float32Array): THREE.Points {
+function createEggPoints(positions: Float32Array, color: THREE.Color): THREE.Points {
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
 
@@ -140,6 +141,7 @@ function createEggPoints(positions: Float32Array): THREE.Points {
       uBass: { value: 0 },
       uMid: { value: 0 },
       uTreble: { value: 0 },
+      uColor: { value: color.clone() },
     },
     vertexShader: eggVertexShader,
     fragmentShader: eggFragmentShader,
@@ -161,11 +163,19 @@ export class OrbitingEggs {
   private positionsB: Float32Array | null = null;
   private rotationAngle = 0;
   private currentCount = 0;
+  private currentColor = new THREE.Color(1, 1, 1);
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
     this.orbitGroup = new THREE.Group();
     scene.add(this.orbitGroup);
+  }
+
+  setColor(color: THREE.Color) {
+    this.currentColor.copy(color);
+    for (const egg of this.eggs) {
+      (egg.material as THREE.ShaderMaterial).uniforms.uColor.value.copy(color);
+    }
   }
 
   async loadModels(urlA: string, urlB: string) {
@@ -190,7 +200,7 @@ export class OrbitingEggs {
 
     for (let i = 0; i < n; i++) {
       const positions = i % 2 === 0 ? this.positionsA : this.positionsB;
-      const points = createEggPoints(new Float32Array(positions));
+      const points = createEggPoints(new Float32Array(positions), this.currentColor);
       this.orbitGroup.add(points);
       this.eggs.push(points);
     }
